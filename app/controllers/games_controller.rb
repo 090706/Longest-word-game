@@ -1,41 +1,30 @@
-require 'open-uri'
-require 'json'
+require "open-uri"
 
 class GamesController < ApplicationController
+  VOWELS = %w(A E I O U Y)
+
   def new
-  grid = []
-  10.times { grid << ('A'..'Z').to_a.sample }
-  @letters = grid
-end
+    @letters = Array.new(5) { VOWELS.sample }
+    @letters += Array.new(5) { (('A'..'Z').to_a - VOWELS).sample }
+    @letters.shuffle!
+  end
 
   def score
-    @params = params
-    @input
-    @letters
-    @result = run_game(@input, @letters)
+    @letters = params[:letters].split
+    @word = (params[:word] || "").upcase
+    @included = included?(@word, @letters)
+    @english_word = english_word?(@word)
   end
 
-  def run_game(attempt, grid)
-    if a true_word?(attempt) && word_in_grid?(attempt, grid)
-      'Well done!'
-    elsif !a true_word?(attempt)
-      "Sorry but #{attempt} is not an English word"
-    elsif !word_in_grid(attempt, grid)
-      "Sorry but #{attempt} not on the grid"
-    end
+  private
+
+  def included?(word, letters)
+    word.chars.all? { |letter| word.count(letter) <= letters.count(letter) }
   end
 
-  def a_true_word?(word)
-    url= "https://wagon-dictionary.herokuapp.com/#{word}"
-    user_serialized = URI.open(url).read
-    user = JSON.parse(user_serialized)
-    user ['found']? true : false
+  def english_word?(word)
+    response = URI.open("https://wagon-dictionary.herokuapp.com/#{word}")
+    json = JSON.parse(response.read)
+    json['found']
   end
-
-def word_in_grid?(attempt, grid)
-  attempt.downcase!
-  attempt.chars.all? do |letter|
-    attempt.count(letter) <= grid.count(letter)
-  end
-end
 end
